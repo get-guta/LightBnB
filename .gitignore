@@ -1,0 +1,32 @@
+# Dependencies
+/node_modules
+
+# Build output
+/dist
+/build
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor and IDE files
+/.idea
+/.vscode
+*.swp
+*.swo
+*.log
+
+# Logs
+/logs
+
+# Compiled output
+/public/bundle.js
+/public/bundle.js.map
+
+# Miscellaneous
+.DS_Store
+Thumbs.db
