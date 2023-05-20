@@ -125,15 +125,57 @@ const getAllReservations = (guest_id, limit) => {
  */
 
 const getAllProperties = (options, limit = 10) => {
-  return pool
-    .query(`SELECT * FROM properties LIMIT $1`, [limit])
-    .then((result) => {
-      return Promise.resolve(result.rows)
-    })
-    .catch((err) => {
-      console.log(err.message);
-    });
+  return new Promise((resolve, reject) => {
+    let query = {
+      text: `SELECT * FROM properties`,
+      values: [],
+    };
+
+    let conditions = [];
+    let conditionIndex = 1;
+
+    if (options.owner_id) {
+      conditions.push(`owner_id = $${conditionIndex}`);
+      query.values.push(options.owner_id);
+      conditionIndex++;
+    }
+
+    if (options.minimum_price_per_night) {
+      conditions.push(`cost_per_night >= $${conditionIndex}`);
+      query.values.push(options.minimum_price_per_night * 100); // Convert to cents
+      conditionIndex++;
+    }
+
+    if (options.maximum_price_per_night) {
+      conditions.push(`cost_per_night <= $${conditionIndex}`);
+      query.values.push(options.maximum_price_per_night * 100); // Convert to cents
+      conditionIndex++;
+    }
+
+    if (options.minimum_rating) {
+      conditions.push(`average_rating >= $${conditionIndex}`);
+      query.values.push(options.minimum_rating);
+      conditionIndex++;
+    }
+
+    if (conditions.length > 0) {
+      query.text += ` WHERE ${conditions.join(" AND ")}`;
+    }
+
+    query.text += ` LIMIT $${conditionIndex}`;
+    query.values.push(limit);
+
+    pool
+      .query(query)
+      .then((result) => {
+        resolve(result.rows);
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  });
 };
+
 
 /**
  * Add a property to the database
