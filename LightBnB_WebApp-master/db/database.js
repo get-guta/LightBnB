@@ -11,7 +11,7 @@ const pool = new Pool({
 });
 
 // the following assumes that you named your connection variable `pool`
-pool.query(`SELECT title FROM properties LIMIT 10;`).then(response => { console.log(response) })
+// pool.query(`SELECT title FROM properties LIMIT 10;`).then(response => { console.log(response) })
 
 
 /// Users
@@ -91,9 +91,29 @@ const addUser = function (user) {
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
-const getAllReservations = function (guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+const getAllReservations = (guest_id, limit) => {
+  return new Promise((resolve, reject) => {
+    const query = {
+      text: `
+        SELECT * FROM properties
+        JOIN reservations ON properties.id = reservations.property_id
+        WHERE reservations.guest_id = $1
+        LIMIT $2
+      `,
+      values: [guest_id, limit],
+    };
+
+    pool
+      .query(query)
+      .then((results) => {
+        resolve(results.rows);
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  });
 };
+
 
 /// Properties
 
