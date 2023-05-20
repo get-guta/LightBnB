@@ -1,8 +1,9 @@
-const properties = require("./json/properties.json");
-const users = require("./json/users.json");
+// const properties = require("./json/properties.json");
+// const users = require("./json/users.json");
 
 const { Pool } = require('pg');
 
+//establishing connection
 const pool = new Pool({
   user: 'vagrant',
   password: '123',
@@ -23,6 +24,7 @@ const pool = new Pool({
  */
 const getUserWithEmail = function (email) {
   return new Promise((resolve, reject) => {
+    // Execute the query using the database connection pool
     pool
       .query(`SELECT * FROM users WHERE email=$1`, [email])
       .then((result) => {
@@ -45,6 +47,7 @@ const getUserWithEmail = function (email) {
  */
 const getUserWithId = function (id) {
   return new Promise((resolve, reject) => {
+    // Execute the query using the database connection pool
     pool
       .query(`SELECT * FROM users WHERE id=$1`, [id])
       .then((result) => {
@@ -68,14 +71,14 @@ const getUserWithId = function (id) {
 const addUser = function (user) {
   return new Promise((resolve, reject) => {
     const { name, email, password } = user;
-
+    // Execute the query using the database connection pool
     pool
       .query(
         `INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *`,
         [name, email, password]
       )
       .then((result) => {
-        resolve(result.rows[0]); // Resolve with the newly inserted user object
+        resolve(result.rows); // Resolve with the newly inserted user object
       })
       .catch((err) => {
         reject(err); // Reject with the error message
@@ -126,45 +129,59 @@ const getAllReservations = (guest_id, limit) => {
 
 const getAllProperties = (options, limit = 10) => {
   return new Promise((resolve, reject) => {
+    // Initialize the query object
     let query = {
       text: `SELECT * FROM properties`,
       values: [],
     };
 
+    // Initialize arrays to store conditions and condition index
     let conditions = [];
     let conditionIndex = 1;
 
+    // Check if owner_id option is provided
     if (options.owner_id) {
+      // Add condition and corresponding value to the query
       conditions.push(`owner_id = $${conditionIndex}`);
       query.values.push(options.owner_id);
       conditionIndex++;
     }
 
+    // Check if minimum_price_per_night option is provided
     if (options.minimum_price_per_night) {
+      // Add condition and corresponding value to the query
       conditions.push(`cost_per_night >= $${conditionIndex}`);
       query.values.push(options.minimum_price_per_night * 100); // Convert to cents
       conditionIndex++;
     }
 
+    // Check if maximum_price_per_night option is provided
     if (options.maximum_price_per_night) {
+      // Add condition and corresponding value to the query
       conditions.push(`cost_per_night <= $${conditionIndex}`);
       query.values.push(options.maximum_price_per_night * 100); // Convert to cents
       conditionIndex++;
     }
 
+    // Check if minimum_rating option is provided
     if (options.minimum_rating) {
+      // Add condition and corresponding value to the query
       conditions.push(`average_rating >= $${conditionIndex}`);
       query.values.push(options.minimum_rating);
       conditionIndex++;
     }
 
+    // Check if any conditions are added
     if (conditions.length > 0) {
+      // Append WHERE clause with conditions to the query
       query.text += ` WHERE ${conditions.join(" AND ")}`;
     }
 
+    // Append LIMIT clause with limit value to the query
     query.text += ` LIMIT $${conditionIndex}`;
     query.values.push(limit);
 
+    // Execute the query using the database connection pool
     pool
       .query(query)
       .then((result) => {
@@ -183,6 +200,7 @@ const getAllProperties = (options, limit = 10) => {
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = (property) => {
+  // expected elements from property object
   const {
     owner_id,
     title,
@@ -199,7 +217,7 @@ const addProperty = (property) => {
     number_of_bathrooms,
     number_of_bedrooms
   } = property;
-
+// The RETURNING * clause at the end of the query will instruct the database to return the saved property after insertion
   const query = {
     text: `INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, street, city, province, post_code, country, parking_spaces, number_of_bathrooms, number_of_bedrooms) 
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
@@ -221,7 +239,7 @@ const addProperty = (property) => {
       number_of_bedrooms
     ],
   };
-
+// Execute the query using the database connection pool
   return pool.query(query)
     .then((result) => {
       return Promise.resolve(result.rows);
@@ -232,7 +250,7 @@ const addProperty = (property) => {
     });
 };
 
-
+//export modules
 module.exports = {
   getUserWithEmail,
   getUserWithId,
