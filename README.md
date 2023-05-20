@@ -46,8 +46,9 @@ const pool = new Pool({
 To start the LightBnB project, follow these steps:
 
 1. Ensure the PostgreSQL database server is running & lightbnb db is created.
-2. Run the command `npm run local` in the project directory.
-3. Open a web browser and navigate to the specified URL or `localhost:3000`.
+2. cd to `LightBNB_WebApp-master`
+3. Run the command `npm run local` in the project directory.
+4. Open a web browser and navigate to the specified URL or `localhost:3000`.
 
 ## Screenshot
 Look at some of screenshots 
