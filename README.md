@@ -51,4 +51,11 @@ To start the LightBnB project, follow these steps:
 
 ## Screenshot
 Look at some of screenshots 
+### all listings page
+![All Listings](/screenshots/all_listings.png)
+### filter properties
+![Filter Listings](/screenshots/filter.png)
+![Filtered result](/screenshots/filtered_result.png)
+### add new property
+![Add Property](/screenshots/add_new.png)
 
