@@ -89,12 +89,15 @@ const addUser = function (user) {
  */
 const getAllReservations = (guest_id, limit) => {
   return new Promise((resolve, reject) => {
+    //calculates the average ratings for each property. By joining the property_reviews table based on the property_id column, we can retrieve the average rating corresponding to each property.
     const query = {
       text: `
-        SELECT * FROM properties
-        JOIN reservations ON properties.id = reservations.property_id
-        WHERE reservations.guest_id = $1
-        LIMIT $2
+      SELECT properties.*, 
+      (SELECT AVG(rating) FROM property_reviews WHERE property_reviews.property_id = properties.id) AS average_rating
+FROM properties
+JOIN reservations ON properties.id = reservations.property_id
+WHERE reservations.guest_id = $1
+LIMIT $2
       `,
       values: [guest_id, limit],
     };
@@ -122,56 +125,43 @@ const getAllReservations = (guest_id, limit) => {
 
 const getAllProperties = (options, limit = 10) => {
   return new Promise((resolve, reject) => {
-    // Initialize the query object
+    // Initialize the base query
     let query = {
-      text: `SELECT * FROM properties`,
+      text: `SELECT properties.*, 
+                    (SELECT AVG(rating) FROM property_reviews WHERE property_reviews.property_id = properties.id) AS average_rating
+             FROM properties
+             WHERE 1 = 1`, // 1 = 1 is added to easily add conditions in subsequent steps
       values: [],
     };
 
-    // Initialize arrays to store conditions and condition index
-    let conditions = [];
-    let conditionIndex = 1;
+    // Add conditions for filtering options
 
     // Check if owner_id option is provided
     if (options.owner_id) {
-      // Add condition and corresponding value to the query
-      conditions.push(`owner_id = $${conditionIndex}`);
+      query.text += ` AND properties.owner_id = $${query.values.length + 1}`;
       query.values.push(options.owner_id);
-      conditionIndex++;
     }
 
     // Check if minimum_price_per_night option is provided
     if (options.minimum_price_per_night) {
-      // Add condition and corresponding value to the query
-      conditions.push(`cost_per_night >= $${conditionIndex}`);
+      query.text += ` AND properties.cost_per_night >= $${query.values.length + 1}`;
       query.values.push(options.minimum_price_per_night * 100); // Convert to cents
-      conditionIndex++;
     }
 
     // Check if maximum_price_per_night option is provided
     if (options.maximum_price_per_night) {
-      // Add condition and corresponding value to the query
-      conditions.push(`cost_per_night <= $${conditionIndex}`);
+      query.text += ` AND properties.cost_per_night <= $${query.values.length + 1}`;
       query.values.push(options.maximum_price_per_night * 100); // Convert to cents
-      conditionIndex++;
     }
 
     // Check if minimum_rating option is provided
     if (options.minimum_rating) {
-      // Add condition and corresponding value to the query
-      conditions.push(`average_rating >= $${conditionIndex}`);
+      query.text += ` AND (SELECT AVG(rating) FROM property_reviews WHERE property_reviews.property_id = properties.id) >= $${query.values.length + 1}`;
       query.values.push(options.minimum_rating);
-      conditionIndex++;
-    }
-
-    // Check if any conditions are added
-    if (conditions.length > 0) {
-      // Append WHERE clause with conditions to the query
-      query.text += ` WHERE ${conditions.join(" AND ")}`;
     }
 
     // Append LIMIT clause with limit value to the query
-    query.text += ` LIMIT $${conditionIndex}`;
+    query.text += ` LIMIT $${query.values.length + 1}`;
     query.values.push(limit);
 
     // Execute the query using the database connection pool
@@ -185,8 +175,6 @@ const getAllProperties = (options, limit = 10) => {
       });
   });
 };
-
-
 /**
  * Add a property to the database
  * @param {{}} property An object containing all of the property details.
@@ -210,7 +198,7 @@ const addProperty = (property) => {
     number_of_bathrooms,
     number_of_bedrooms
   } = property;
-// The RETURNING * clause at the end of the query will instruct the database to return the saved property after insertion
+  // The RETURNING * clause at the end of the query will instruct the database to return the saved property after insertion
   const query = {
     text: `INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, street, city, province, post_code, country, parking_spaces, number_of_bathrooms, number_of_bedrooms) 
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
@@ -232,7 +220,7 @@ const addProperty = (property) => {
       number_of_bedrooms
     ],
   };
-// Execute the query using the database connection pool
+  // Execute the query using the database connection pool
   return pool.query(query)
     .then((result) => {
       return Promise.resolve(result.rows);
