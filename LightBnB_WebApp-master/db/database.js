@@ -71,7 +71,7 @@ const addUser = function (user) {
         [name, email, password]
       )
       .then((result) => {
-        resolve(result.rows); // Resolve with the newly inserted user object
+        resolve(result.rows[0]); // Resolve with the newly inserted user object
       })
       .catch((err) => {
         reject(err); // Reject with the error message
